@@ -128,6 +128,8 @@ function ChunkParseService.WriteOreData(self : ChunkParser, X : number, Y : numb
 	local State : number = UpdateTable.Attributes and GenEnum.States.AttributeCreation or GenEnum.States.Create
 	
 	self.ActualOres += 1
+
+	--This just calculates the size of the buffer thatll be made depending on if it has attributes or not
 	local Size : number = GenerationUtility.GetComponentSize(State) + GenerationUtility.GetAttributesSize(UpdateTable.Attributes or {}) + 1
 	local Buffer : buffer = buffer.create(Size)
 	
@@ -153,6 +155,8 @@ function ChunkParseService.ParseBufferAt(self : ChunkParser, X : number,Y : numb
 	
 	if typeof(AtKey) == "buffer" then
 		local State : number = buffer.readu8(AtKey,0)
+
+		--This will read all data for the given state and return it, it'll contain the Name, Position, Owner, Variant, Spawn Context, and Attributes
 		return GenerationUtility.ReadComponent(State,AtKey,1)
 	end
 	
@@ -266,6 +270,8 @@ function ChunkParseService.GetChunkBuffers(self : ChunkParser) : buffer
 	
 	local ByteCount : number = 0
 	local SavedSizes : {[number] : number} = {}
+
+	--Combines all buffer sizes to create the full buffer
 	for Key : number,Info : number|buffer in pairs(self.OreList) do
 		if typeof(Info) == "number" then
 			continue
@@ -279,6 +285,7 @@ function ChunkParseService.GetChunkBuffers(self : ChunkParser) : buffer
 	local OreBuffer : buffer = buffer.create(ByteCount)
 	local Offset : number = 0
 
+	--Copies all the buffer data based on its saved size from the previous loop
 	for Key : number,Info : number|buffer in pairs(self.OreList) do
 		if typeof(Info) == "number" then
 			continue
@@ -310,7 +317,8 @@ function ChunkParseService.CreateCompressedBuffer(self : ChunkParser) : buffer
 	self.CompressionState = CompressionStates.Compressing
 	local ByteCount : number = 0
 	local SavedSizes = {} :: {[number] : number}
-	
+
+	--Same action as combining in the previous step but now also includes the number values as those need to be saved too
 	for Key : number, Buffer : number|buffer in pairs(self.OreList) do
 		local Size = 3
 		if typeof(Buffer) == "number" then
@@ -327,7 +335,8 @@ function ChunkParseService.CreateCompressedBuffer(self : ChunkParser) : buffer
 	
 	local ToCompress = buffer.create(ByteCount)
 	local Offset : number = 0
-	
+
+	--Writes all the air and buffer values to the newly created buffer
 	for Key : number, Value : number|buffer in pairs(self.OreList) do
 		if typeof(Value) == "number" then
 			buffer.writeu16(ToCompress,Offset,Key)
@@ -348,7 +357,8 @@ function ChunkParseService.CreateCompressedBuffer(self : ChunkParser) : buffer
 		
 		self.OreList[Key] = nil
 	end
-	
+
+	--Uses encoding service to compress the buffer that was just created at the highest compression level
 	local CompressedData = EncodingService:CompressBuffer(ToCompress,Enum.CompressionAlgorithm.Zstd,21)
 	self.CompressedBuffer = CompressedData
 	
@@ -386,6 +396,7 @@ function ChunkParseService.DecompressBuffer(self : ChunkParser)
 		local ValueSize = buffer.readu8(UncompressedData,ReOffset)
 		ReOffset += 1
 
+		--Actual ore data is usually 20+ bytes and can't possibly be 1 so its guaranteed to be an air block if the size is 1
 		if ValueSize == 1 then
 			local Value = buffer.readi8(UncompressedData,ReOffset)
 			ReOffset += 1
@@ -401,6 +412,8 @@ function ChunkParseService.DecompressBuffer(self : ChunkParser)
 	end
 	
 	self.OreList = Constructed
+
+	--Unyields all the actions that were paused while the chunk was decompressing
 	self:ParseQueue()
 	
 	self.IsActive = true
