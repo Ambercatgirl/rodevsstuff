@@ -1,5 +1,9 @@
 ambwuwu // thecatofalltime
 
+--[[
+	This script is pretty much the thing that carries my game and allows for ~25,000,000 blocks to be generated in the mine at a time (excluding air blocks).
+]]
+
 --!native
 local EncodingService = game:GetService("EncodingService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
