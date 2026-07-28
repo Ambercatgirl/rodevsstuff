@@ -155,10 +155,12 @@ function ChunkParseService.WriteOreData(self : ChunkParser, X : number, Y : numb
 	self.ActualOres += 1
 
 	--This just calculates the size of the buffer thatll be made depending on if it has attributes or not
+	--+1 at the end is for the state value which isnt included in the component size calculator, that function only checks the important values
 	local Size : number = GenerationUtility.GetComponentSize(State) + GenerationUtility.GetAttributesSize(UpdateTable.Attributes or {}) + 1
+	--create buffer with calculated size
 	local Buffer : buffer = buffer.create(Size)
 	
-	--This handles all the different values an ore can have (theres a set amount of important values and a variable amount of attribute values)
+	--helper function to take the created buffer and the update table and converts all values in the table to integers and writes them to the buffer, then sets this ores key in the orelist to the newly created buffer
 	GenerationUtility.CreateComponent(State,Buffer,0,UpdateTable)
 	self.OreList[OreKey] = Buffer
 	
